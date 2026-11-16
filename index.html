@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>EdgeMNIST &bull; Browser-Native Neural Network Lab</title>
     <meta
       name="description"
@@ -114,6 +114,7 @@
         justify-content: center;
         color: white;
         box-shadow: 0 0 24px rgba(14, 165, 233, 0.45);
+        flex-shrink: 0;
       }
 
       .brand-icon-wrapper::after {
@@ -151,6 +152,7 @@
         display: inline-flex;
         align-items: center;
         gap: 0.35rem;
+        white-space: nowrap;
       }
 
       .badge-edge .dot {
@@ -184,6 +186,7 @@
         font-size: 0.78rem;
         font-family: var(--font-mono);
         color: var(--text-secondary);
+        white-space: nowrap;
       }
 
       /* Main Grid */
@@ -192,24 +195,6 @@
         grid-template-columns: 360px 1fr 340px;
         gap: 1.5rem;
         align-items: start;
-      }
-
-      @media (max-width: 1140px) {
-        .main-grid {
-          grid-template-columns: 1fr 1fr;
-        }
-        .main-grid > .col-prediction {
-          grid-column: span 2;
-        }
-      }
-
-      @media (max-width: 768px) {
-        .main-grid {
-          grid-template-columns: 1fr;
-        }
-        .main-grid > .col-prediction {
-          grid-column: span 1;
-        }
       }
 
       /* Panel Cards */
@@ -274,7 +259,10 @@
         border: 2px dashed rgba(255, 255, 255, 0.12);
         overflow: hidden;
         cursor: crosshair;
-        touch-action: none;
+        touch-action: none; /* Crucial for mobile drawing! */
+        -webkit-touch-callout: none;
+        user-select: none;
+        -webkit-user-select: none;
         transition: border-color 0.25s ease, box-shadow 0.25s ease;
       }
 
@@ -287,6 +275,7 @@
         width: 100%;
         height: 100%;
         display: block;
+        touch-action: none;
       }
 
       .canvas-hint {
@@ -319,33 +308,34 @@
         align-items: center;
         justify-content: center;
         gap: 0.45rem;
-        padding: 0.7rem 1rem;
-        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        border-radius: 12px;
         font-family: var(--font-sans);
-        font-size: 0.85rem;
+        font-size: 0.88rem;
         font-weight: 600;
         border: 1px solid transparent;
         cursor: pointer;
+        min-height: 44px; /* Apple minimum touch target */
         transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        -webkit-tap-highlight-color: transparent;
       }
 
       .btn-ghost {
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.05);
         color: var(--text-primary);
-        border-color: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.1);
       }
 
-      .btn-ghost:hover {
-        background: rgba(255, 255, 255, 0.09);
-        border-color: rgba(255, 255, 255, 0.18);
-        transform: translateY(-1px);
+      .btn-ghost:active, .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.2);
       }
 
       /* Presets Bar */
       .presets-bar {
         display: flex;
         flex-direction: column;
-        gap: 0.4rem;
+        gap: 0.5rem;
       }
 
       .presets-header {
@@ -359,26 +349,31 @@
       .preset-buttons {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 0.35rem;
+        gap: 0.4rem;
       }
 
       .btn-preset {
-        padding: 0.4rem;
+        padding: 0.6rem 0.3rem;
         font-family: var(--font-mono);
-        font-size: 0.85rem;
+        font-size: 0.95rem;
         font-weight: 700;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
         color: var(--text-secondary);
-        border-radius: 6px;
+        border-radius: 8px;
         cursor: pointer;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         transition: all 0.15s;
+        -webkit-tap-highlight-color: transparent;
       }
 
-      .btn-preset:hover {
-        background: rgba(34, 211, 238, 0.15);
+      .btn-preset:active, .btn-preset:hover {
+        background: rgba(34, 211, 238, 0.18);
         color: var(--cyan-400);
-        border-color: rgba(34, 211, 238, 0.3);
+        border-color: rgba(34, 211, 238, 0.35);
       }
 
       /* MNIST Tensor Box */
@@ -400,6 +395,7 @@
         image-rendering: pixelated;
         border: 1px solid rgba(255, 255, 255, 0.15);
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        flex-shrink: 0;
       }
 
       .tensor-meta {
@@ -687,6 +683,128 @@
       .footer-nav a:hover {
         color: var(--text-primary);
       }
+
+      /* -------------------------------------------
+         RESPONSIVE / MOBILE-FIRST ARCHITECTURE
+         ------------------------------------------- */
+      @media (max-width: 1140px) {
+        .main-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .main-grid > .col-prediction {
+          grid-column: span 2;
+        }
+      }
+
+      @media (max-width: 768px) {
+        body {
+          padding: 0.75rem 0.6rem 2.5rem 0.6rem;
+        }
+
+        .app-shell {
+          gap: 0.9rem;
+        }
+
+        header {
+          padding: 1rem;
+          border-radius: 16px;
+          gap: 0.75rem;
+        }
+
+        .brand-titles h1 {
+          font-size: 1.2rem;
+        }
+
+        .brand-titles p {
+          font-size: 0.75rem;
+        }
+
+        .header-controls {
+          width: 100%;
+          justify-content: space-between;
+        }
+
+        .meta-chip {
+          padding: 0.3rem 0.65rem;
+          font-size: 0.72rem;
+        }
+
+        .main-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 0.9rem;
+        }
+
+        .panel {
+          padding: 1rem;
+          border-radius: 16px;
+          gap: 0.9rem;
+        }
+
+        /* Reorder panels for optimal mobile flow:
+           Order 1: Input Canvas & Presets
+           Order 2: Prediction / Winner & Softmax bars (Immediate feedback!)
+           Order 3: Network Topology & Filter maps (Inspection below) */
+        .panel-canvas {
+          order: 1;
+        }
+
+        .col-prediction {
+          order: 2;
+        }
+
+        .architecture-panel {
+          order: 3;
+        }
+
+        /* Mobile Prediction Layout: Side-by-Side Hero + Probability snapshot */
+        .prediction-pod {
+          padding: 1rem;
+        }
+
+        .digit-display {
+          font-size: 4.5rem;
+          margin: 0.1rem 0;
+        }
+
+        .probs-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0.4rem 0.75rem;
+        }
+
+        .prob-row {
+          font-size: 0.72rem;
+          grid-template-columns: 18px 1fr 40px;
+          gap: 0.4rem;
+        }
+
+        /* 30 Filter Maps on Mobile */
+        .feature-gallery {
+          grid-template-columns: repeat(6, 1fr);
+          gap: 3px;
+          padding: 6px;
+        }
+
+        .btn-preset {
+          font-size: 0.9rem;
+          min-height: 42px;
+        }
+
+        footer {
+          padding: 1rem;
+          border-radius: 14px;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.85rem;
+        }
+
+        .telemetry-group {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.45rem;
+        }
+      }
     </style>
   </head>
   <body>
@@ -718,7 +836,7 @@
       <!-- Main Grid -->
       <div class="main-grid">
         <!-- Col 1: Drawing Canvas & Preprocessing -->
-        <div class="panel">
+        <div class="panel panel-canvas">
           <div class="panel-header">
             <div class="panel-title">
               <i data-lucide="pen-tool" style="width: 16px; height: 16px;"></i>
@@ -737,7 +855,7 @@
 
           <div class="action-row">
             <button class="btn btn-ghost" id="clearBtn">
-              <i data-lucide="rotate-ccw" style="width: 15px; height: 15px;"></i>
+              <i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i>
               <span>Clear Canvas</span>
             </button>
           </div>
@@ -959,17 +1077,32 @@
       }
       setupFeatureGrid();
 
-      // Viewport resize
+      // Viewport resize with stroke preservation
       function handleResize() {
         const rect = canvasViewport.getBoundingClientRect();
+        
+        // Backup existing drawing if resized
+        let backup = null;
+        if (canvas.width > 0 && canvas.height > 0) {
+          backup = document.createElement('canvas');
+          backup.width = canvas.width;
+          backup.height = canvas.height;
+          backup.getContext('2d').drawImage(canvas, 0, 0);
+        }
+
         canvas.width = rect.width;
         canvas.height = rect.height;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        ctx.lineWidth = Math.max(18, Math.floor(rect.width / 14));
+        ctx.lineWidth = Math.max(16, Math.floor(rect.width / 14));
         ctx.strokeStyle = '#ffffff';
+
+        if (backup) {
+          ctx.drawImage(backup, 0, 0, rect.width, rect.height);
+        }
       }
       window.addEventListener('resize', handleResize);
+      window.addEventListener('orientationchange', () => setTimeout(handleResize, 150));
       handleResize();
 
       // Load Model
@@ -1044,6 +1177,7 @@
         };
       }
 
+      // Pointer / Mouse Listeners
       canvas.addEventListener('mousedown', (e) => {
         const { x, y } = getPointerCoords(e);
         startStroke(x, y);
@@ -1054,18 +1188,27 @@
       });
       window.addEventListener('mouseup', finishStroke);
 
+      // Mobile Touch Listeners (Strict passive: false to prevent scrolling)
       canvas.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+        if (e.target === canvas) {
+          e.preventDefault();
+        }
         const { x, y } = getPointerCoords(e);
         startStroke(x, y);
       }, { passive: false });
+
       canvas.addEventListener('touchmove', (e) => {
-        e.preventDefault();
+        if (e.target === canvas) {
+          e.preventDefault();
+        }
         const { x, y } = getPointerCoords(e);
         appendStroke(x, y);
       }, { passive: false });
+
       canvas.addEventListener('touchend', (e) => {
-        e.preventDefault();
+        if (e.target === canvas) {
+          e.preventDefault();
+        }
         finishStroke();
       }, { passive: false });
 
@@ -1102,7 +1245,7 @@
           canvasHint.classList.add('hidden');
           const d = btn.getAttribute('data-digit');
           drawPresetDigit(d);
-          runInference();
+          scheduleInference();
         });
       });
 
