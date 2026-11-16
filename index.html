@@ -1,172 +1,1254 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-H0NW5Z2MYC"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EdgeMNIST &bull; Browser-Native Neural Network Lab</title>
+    <meta
+      name="description"
+      content="Zero-cloud, client-side CNN digit classifier running live in your browser using TensorFlow.js with real-time layer activation inspection."
+    />
+    <meta name="author" content="Janmejai Singh" />
 
-      gtag('config', 'G-H0NW5Z2MYC');
-    </script>
-    <title>Digit Recognizer App</title>
-    <meta name="description" content="Simple Machine Learning Model into an WebApp using TensorFlow.js">
-    <meta name="keywords" content="Machine Learning, TensorFlow.js">
-    <meta name="author" content="Janmejai Singh">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- TensorFlow.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+
     <style>
+      :root {
+        --bg-void: #06080d;
+        --bg-panel: rgba(13, 17, 28, 0.72);
+        --bg-panel-border: rgba(255, 255, 255, 0.08);
+        --bg-panel-glow: rgba(56, 189, 248, 0.03);
+        
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        
+        --cyan-400: #22d3ee;
+        --cyan-500: #06b6d4;
+        --blue-500: #3b82f6;
+        --emerald-400: #34d399;
+        --purple-400: #c084fc;
+        --amber-400: #fbbf24;
+        
+        --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        --font-display: 'Space Grotesk', var(--font-sans);
+        --font-mono: 'JetBrains Mono', monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
       body {
-        touch-action: none; /*https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action*/
-        font-family: "Roboto";
+        background-color: var(--bg-void);
+        background-image: 
+          radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 55%),
+          radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0px, transparent 50%),
+          radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%),
+          linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+        background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        background-attachment: fixed;
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        padding: 1.5rem 1.25rem 3.5rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        -webkit-font-smoothing: antialiased;
       }
-      h1 {
-        margin: 50px;
-        font-size: 70px;
+
+      /* Container */
+      .app-shell {
+        width: 100%;
+        max-width: 1280px;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
+
+      /* Header */
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        padding: 1.25rem 1.75rem;
+        background: var(--bg-panel);
+        border: 1px solid var(--bg-panel-border);
+        border-radius: 20px;
+        backdrop-filter: blur(16px);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .brand-icon-wrapper {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #0ea5e9, #6366f1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        box-shadow: 0 0 24px rgba(14, 165, 233, 0.45);
+      }
+
+      .brand-icon-wrapper::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #0ea5e9, #a855f7);
+        z-index: -1;
+        opacity: 0.6;
+        filter: blur(6px);
+      }
+
+      .brand-titles h1 {
+        font-family: var(--font-display);
+        font-size: 1.45rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .badge-edge {
+        font-size: 0.65rem;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        background: rgba(52, 211, 153, 0.12);
+        color: var(--emerald-400);
+        border: 1px solid rgba(52, 211, 153, 0.28);
+        padding: 0.2rem 0.55rem;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .badge-edge .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background-color: var(--emerald-400);
+        box-shadow: 0 0 8px var(--emerald-400);
+      }
+
+      .brand-titles p {
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        margin-top: 0.15rem;
+      }
+
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .meta-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        padding: 0.4rem 0.85rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--bg-panel-border);
+        border-radius: 10px;
+        font-size: 0.78rem;
+        font-family: var(--font-mono);
+        color: var(--text-secondary);
+      }
+
+      /* Main Grid */
+      .main-grid {
+        display: grid;
+        grid-template-columns: 360px 1fr 340px;
+        gap: 1.5rem;
+        align-items: start;
+      }
+
+      @media (max-width: 1140px) {
+        .main-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        .main-grid > .col-prediction {
+          grid-column: span 2;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .main-grid {
+          grid-template-columns: 1fr;
+        }
+        .main-grid > .col-prediction {
+          grid-column: span 1;
+        }
+      }
+
+      /* Panel Cards */
+      .panel {
+        background: var(--bg-panel);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid var(--bg-panel-border);
+        border-radius: 20px;
+        padding: 1.35rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .panel-title {
+        font-family: var(--font-display);
+        font-size: 0.95rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        letter-spacing: -0.01em;
+      }
+
+      .panel-title i {
+        color: var(--cyan-400);
+      }
+
+      .panel-tag {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+
+      /* Canvas Stage */
+      .canvas-viewport {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        border-radius: 14px;
+        background: #020306;
+        border: 2px dashed rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+        cursor: crosshair;
+        touch-action: none;
+        transition: border-color 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      .canvas-viewport:hover {
+        border-color: rgba(34, 211, 238, 0.45);
+        box-shadow: 0 0 25px rgba(34, 211, 238, 0.1);
+      }
+
+      #drawingCanvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .canvas-hint {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.6rem;
+        color: rgba(255, 255, 255, 0.25);
+        font-size: 0.85rem;
+        transition: opacity 0.3s ease;
+      }
+
+      .canvas-hint.hidden {
+        opacity: 0;
+      }
+
+      .action-row {
+        display: flex;
+        gap: 0.6rem;
+      }
+
+      .btn {
+        flex: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        padding: 0.7rem 1rem;
+        border-radius: 10px;
+        font-family: var(--font-sans);
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .btn-ghost {
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--text-primary);
+        border-color: rgba(255, 255, 255, 0.08);
+      }
+
+      .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(255, 255, 255, 0.18);
+        transform: translateY(-1px);
+      }
+
+      /* Presets Bar */
+      .presets-bar {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+      }
+
+      .presets-header {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .preset-buttons {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0.35rem;
+      }
+
+      .btn-preset {
+        padding: 0.4rem;
+        font-family: var(--font-mono);
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text-secondary);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-preset:hover {
+        background: rgba(34, 211, 238, 0.15);
+        color: var(--cyan-400);
+        border-color: rgba(34, 211, 238, 0.3);
+      }
+
+      /* MNIST Tensor Box */
+      .tensor-monitor {
+        background: rgba(2, 3, 6, 0.8);
+        border: 1px solid var(--bg-panel-border);
+        border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+      }
+
+      #preview28 {
+        width: 56px;
+        height: 56px;
+        background: #000;
+        border-radius: 8px;
+        image-rendering: pixelated;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .tensor-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+      }
+
+      .tensor-meta span:first-child {
+        font-size: 0.76rem;
+        font-family: var(--font-mono);
+        font-weight: 600;
+        color: var(--cyan-400);
+      }
+
+      .tensor-meta span:last-child {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        line-height: 1.3;
+      }
+
+      /* Architecture Column */
+      .architecture-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+      }
+
+      .topology-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .layer-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--bg-panel-border);
+        border-radius: 10px;
+        padding: 0.6rem 0.85rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.2s;
+      }
+
+      .layer-card:hover {
+        border-color: rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .layer-left {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+      }
+
+      .layer-pill {
+        font-size: 0.65rem;
+        font-family: var(--font-mono);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .pill-conv { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.25); }
+      .pill-pool { background: rgba(192, 132, 252, 0.15); color: #d8b4fe; border: 1px solid rgba(192, 132, 252, 0.25); }
+      .pill-dense { background: rgba(52, 211, 153, 0.15); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.25); }
+      .pill-out { background: rgba(251, 191, 36, 0.15); color: #fde047; border: 1px solid rgba(251, 191, 36, 0.25); }
+
+      .layer-name {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .layer-dim {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        color: var(--text-muted);
+      }
+
+      /* Live Feature Maps Gallery */
+      .feature-maps-section {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 0.4rem;
+      }
+
+      .feature-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.72rem;
+        color: var(--text-secondary);
+      }
+
+      .feature-header span:last-child {
+        font-family: var(--font-mono);
+        color: var(--cyan-400);
+        font-size: 0.68rem;
+      }
+
+      .feature-gallery {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 4px;
+        background: #020306;
+        padding: 8px;
+        border-radius: 10px;
+        border: 1px solid var(--bg-panel-border);
+      }
+
+      .feature-canvas {
+        width: 100%;
+        aspect-ratio: 1 / 1;
+        image-rendering: pixelated;
+        border-radius: 2px;
+        background: #080a10;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      /* Prediction Column */
+      .prediction-pod {
+        background: linear-gradient(180deg, rgba(34, 211, 238, 0.06), rgba(0, 0, 0, 0.4));
+        border: 1px solid rgba(34, 211, 238, 0.22);
+        border-radius: 16px;
+        padding: 1.5rem 1rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .prediction-pod::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 120px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--cyan-400), transparent);
+      }
+
+      .pod-label {
+        font-size: 0.72rem;
+        font-family: var(--font-mono);
+        text-transform: uppercase;
+        color: var(--text-secondary);
+        letter-spacing: 0.06em;
+      }
+
+      .digit-display {
+        font-family: var(--font-mono);
+        font-size: 5.5rem;
+        font-weight: 800;
+        line-height: 1.05;
+        color: #ffffff;
+        text-shadow: 0 0 35px rgba(34, 211, 238, 0.65);
+        margin: 0.25rem 0;
+        transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      .confidence-pill {
+        font-size: 0.8rem;
+        font-family: var(--font-mono);
+        background: rgba(34, 211, 238, 0.12);
+        color: var(--cyan-400);
+        padding: 0.3rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid rgba(34, 211, 238, 0.25);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+      }
+
+      /* Probabilities list */
+      .probs-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+      }
+
+      .prob-row {
+        display: grid;
+        grid-template-columns: 24px 1fr 50px;
+        align-items: center;
+        gap: 0.55rem;
+        font-family: var(--font-mono);
+        font-size: 0.76rem;
+      }
+
+      .prob-digit {
+        font-weight: 700;
+        color: var(--text-secondary);
         text-align: center;
       }
-      #paint {
-        border:4px solid red;
-        margin: auto;
+
+      .prob-track {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 4px;
+        overflow: hidden;
       }
-      #predicted { 
-        font-size: 50px;
-        margin-top: 50px;
-        text-align: center;
+
+      .prob-fill {
+        height: 100%;
+        width: 0%;
+        background: var(--text-muted);
+        border-radius: 4px;
+        transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.2s ease;
       }
-      #number {
-        border: 3px solid blue;
-        margin: auto;
-        margin-top: 30px;
-        text-align: center;
-        vertical-align: middle;
+
+      .prob-row.active .prob-digit {
+        color: var(--cyan-400);
       }
-      #clear {
-        margin: auto;
-        margin-top: 70px;
-        padding: 20px;
-        text-align: center;
+
+      .prob-row.active .prob-fill {
+        background: linear-gradient(90deg, var(--cyan-400), var(--blue-500));
+        box-shadow: 0 0 10px rgba(34, 211, 238, 0.7);
+      }
+
+      .prob-val {
+        color: var(--text-muted);
+        text-align: right;
+      }
+
+      .prob-row.active .prob-val {
+        color: var(--cyan-400);
+        font-weight: 700;
+      }
+
+      /* Telemetry Footer */
+      footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1.25rem;
+        padding: 1.1rem 1.75rem;
+        background: var(--bg-panel);
+        border: 1px solid var(--bg-panel-border);
+        border-radius: 16px;
+        font-size: 0.76rem;
+        color: var(--text-secondary);
+        font-family: var(--font-mono);
+      }
+
+      .telemetry-group {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        flex-wrap: wrap;
+      }
+
+      .telemetry-item {
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+      }
+
+      .telemetry-item b {
+        color: var(--text-primary);
+      }
+
+      .footer-nav {
+        display: flex;
+        gap: 1.25rem;
+      }
+
+      .footer-nav a {
+        color: var(--cyan-400);
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        transition: color 0.15s;
+      }
+
+      .footer-nav a:hover {
+        color: var(--text-primary);
       }
     </style>
   </head>
   <body>
-    <!--<script type="text/javascript" src="http://livejs.com/live.js"></script>-->
-    <script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.5.2/dist/tf.min.js"></script>
-    <h1>Digit Recognizer App Using Tensorflow JS</h1>
-    <div id="paint">
-      <canvas id="myCanvas"></canvas>
+    <div class="app-shell">
+      <!-- Header -->
+      <header>
+        <div class="brand">
+          <div class="brand-icon-wrapper">
+            <i data-lucide="brain-circuit" style="width: 24px; height: 24px;"></i>
+          </div>
+          <div class="brand-titles">
+            <h1>EdgeMNIST <span class="badge-edge"><span class="dot"></span>100% In-Browser</span></h1>
+            <p>Zero-cloud client-side CNN digit classifier &bull; Real-time tensor activation inspection</p>
+          </div>
+        </div>
+
+        <div class="header-controls">
+          <div class="meta-chip">
+            <i data-lucide="gpu" style="width: 14px; height: 14px; color: var(--cyan-400);"></i>
+            <span id="backendStatus">WebGL Engine</span>
+          </div>
+          <div class="meta-chip">
+            <i data-lucide="shield-check" style="width: 14px; height: 14px; color: var(--emerald-400);"></i>
+            <span>Zero Server Latency</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Main Grid -->
+      <div class="main-grid">
+        <!-- Col 1: Drawing Canvas & Preprocessing -->
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i data-lucide="pen-tool" style="width: 16px; height: 16px;"></i>
+              <span>Input Canvas</span>
+            </div>
+            <span class="panel-tag">Draw 0 &ndash; 9</span>
+          </div>
+
+          <div class="canvas-viewport" id="canvasViewport">
+            <canvas id="drawingCanvas"></canvas>
+            <div class="canvas-hint" id="canvasHint">
+              <i data-lucide="pencil-line" style="width: 26px; height: 26px;"></i>
+              <span>Draw any number here</span>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <button class="btn btn-ghost" id="clearBtn">
+              <i data-lucide="rotate-ccw" style="width: 15px; height: 15px;"></i>
+              <span>Clear Canvas</span>
+            </button>
+          </div>
+
+          <!-- Presets -->
+          <div class="presets-bar">
+            <span class="presets-header">Quick Test Patterns</span>
+            <div class="preset-buttons">
+              <button class="btn-preset" data-digit="0">0</button>
+              <button class="btn-preset" data-digit="1">1</button>
+              <button class="btn-preset" data-digit="2">2</button>
+              <button class="btn-preset" data-digit="3">3</button>
+              <button class="btn-preset" data-digit="4">4</button>
+              <button class="btn-preset" data-digit="5">5</button>
+              <button class="btn-preset" data-digit="6">6</button>
+              <button class="btn-preset" data-digit="7">7</button>
+              <button class="btn-preset" data-digit="8">8</button>
+              <button class="btn-preset" data-digit="9">9</button>
+            </div>
+          </div>
+
+          <!-- Tensor Preprocessing Monitor -->
+          <div class="tensor-monitor">
+            <canvas id="preview28" width="28" height="28"></canvas>
+            <div class="tensor-meta">
+              <span>28 &times; 28 Normalized Tensor</span>
+              <span>Center-of-mass weighted &amp; fit to 20&times;20 box (MNIST Standard)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 2: Network Topology & Filter Activations -->
+        <div class="panel architecture-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i data-lucide="network" style="width: 16px; height: 16px;"></i>
+              <span>Neural Pipeline Trace</span>
+            </div>
+            <span class="panel-tag">CNN Topology</span>
+          </div>
+
+          <div class="topology-cards">
+            <div class="layer-card">
+              <div class="layer-left">
+                <span class="layer-pill pill-conv">Conv2D</span>
+                <span class="layer-name">Filter Bank (5&times;5 Kernel)</span>
+              </div>
+              <span class="layer-dim">30 @ 24&times;24</span>
+            </div>
+
+            <div class="layer-card">
+              <div class="layer-left">
+                <span class="layer-pill pill-pool">MaxPool</span>
+                <span class="layer-name">Spatial Subsampling (2&times;2)</span>
+              </div>
+              <span class="layer-dim">30 @ 12&times;12</span>
+            </div>
+
+            <div class="layer-card">
+              <div class="layer-left">
+                <span class="layer-pill pill-conv">Conv2D</span>
+                <span class="layer-name">Feature Synergy (3&times;3 Kernel)</span>
+              </div>
+              <span class="layer-dim">15 @ 10&times;10</span>
+            </div>
+
+            <div class="layer-card">
+              <div class="layer-left">
+                <span class="layer-pill pill-pool">MaxPool</span>
+                <span class="layer-name">Subsampling + Dropout (0.2)</span>
+              </div>
+              <span class="layer-dim">15 @ 5&times;5</span>
+            </div>
+
+            <div class="layer-card">
+              <div class="layer-left">
+                <span class="layer-pill pill-dense">Dense</span>
+                <span class="layer-name">Fully Connected Layers</span>
+              </div>
+              <span class="layer-dim">375 &rarr; 128 &rarr; 50</span>
+            </div>
+
+            <div class="layer-card">
+              <div class="layer-left">
+                <span class="layer-pill pill-out">Softmax</span>
+                <span class="layer-name">10-Class Categorical Output</span>
+              </div>
+              <span class="layer-dim">10 Logits</span>
+            </div>
+          </div>
+
+          <!-- Conv1 Feature Maps -->
+          <div class="feature-maps-section">
+            <div class="feature-header">
+              <span>First Convolutional Layer Filter Maps</span>
+              <span>30 PARALLEL FILTERS</span>
+            </div>
+            <div class="feature-gallery" id="featureGallery">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Col 3: Prediction & Class Probabilities -->
+        <div class="panel col-prediction">
+          <div class="panel-header">
+            <div class="panel-title">
+              <i data-lucide="bar-chart-2" style="width: 16px; height: 16px;"></i>
+              <span>Softmax Distribution</span>
+            </div>
+            <span id="latencyTrace" style="font-size: 0.75rem; color: var(--emerald-400); font-family: var(--font-mono);">0.0 ms</span>
+          </div>
+
+          <!-- Hero Number -->
+          <div class="prediction-pod">
+            <span class="pod-label">Recognized Digit</span>
+            <div class="digit-display" id="digitDisplay">&ndash;</div>
+            <div class="confidence-pill" id="confidencePill">
+              <i data-lucide="sparkles" style="width: 13px; height: 13px;"></i>
+              <span id="confidenceText">Awaiting stroke...</span>
+            </div>
+          </div>
+
+          <!-- Probabilities Bars -->
+          <div class="probs-container" id="probsContainer">
+            <!-- 0 through 9 bars populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer / Telemetry -->
+      <footer>
+        <div class="telemetry-group">
+          <div class="telemetry-item">
+            <i data-lucide="layers" style="width: 14px; height: 14px;"></i>
+            <span>Topology: <b>Keras 2.5 CNN (~240 KB)</b></span>
+          </div>
+          <div class="telemetry-item">
+            <i data-lucide="zap" style="width: 14px; height: 14px;"></i>
+            <span>Runtime: <b>TensorFlow.js 4.22 (WebGL)</b></span>
+          </div>
+          <div class="telemetry-item">
+            <i data-lucide="code-2" style="width: 14px; height: 14px;"></i>
+            <span>By <b>Janmejai Singh Minhas</b></span>
+          </div>
+        </div>
+        <div class="footer-nav">
+          <a href="https://github.com/janmejai2002/digit-classifier" target="_blank" rel="noopener">
+            <i data-lucide="github" style="width: 14px; height: 14px;"></i>
+            <span>Source Repo</span>
+          </a>
+          <a href="https://janmejai2002.github.io/" target="_blank" rel="noopener">
+            <i data-lucide="globe" style="width: 14px; height: 14px;"></i>
+            <span>Applied-AI Journal</span>
+          </a>
+        </div>
+      </footer>
     </div>
-    <div id="predicted">
-      Recognized digit
-      <div id="number"></div>
-      <button id="clear">Clear</button>
-    </div>
+
     <script>
-    var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      $('#paint').css({'width': '60%'});
-      $('#number').css({'width': '30%', 'font-size': '240px'});
-      $('#clear').css({'font-size': '50px'});
-    } else {
-      $('#paint').css({'width': '300px'});
-      $('#number').css({'width': '150px', 'font-size': '120px'});
-      $('#clear').css({'font-size': '35px'});
-    }
+      // Lucide icon generation
+      lucide.createIcons();
 
-    var cw = $('#paint').width();
-    $('#paint').css({'height': cw + 'px'});
+      // State
+      let model = null;
+      let convModel = null;
+      let isDrawing = false;
+      let lastX = 0;
+      let lastY = 0;
 
-    cw = $('#number').width();
-    $('#number').css({'height': cw + 'px'});
+      // Elements
+      const canvas = document.getElementById('drawingCanvas');
+      const ctx = canvas.getContext('2d');
+      const canvasViewport = document.getElementById('canvasViewport');
+      const canvasHint = document.getElementById('canvasHint');
+      const clearBtn = document.getElementById('clearBtn');
+      const preview28 = document.getElementById('preview28');
+      const previewCtx = preview28.getContext('2d');
+      const digitDisplayEl = document.getElementById('digitDisplay');
+      const confidenceTextEl = document.getElementById('confidenceText');
+      const latencyTraceEl = document.getElementById('latencyTrace');
+      const probsContainerEl = document.getElementById('probsContainer');
+      const featureGalleryEl = document.getElementById('featureGallery');
+      const backendStatusEl = document.getElementById('backendStatus');
 
-    // From https://www.html5canvastutorials.com/labs/html5-canvas-paint-application/
-    var canvas = document.getElementById('myCanvas');
-    var context = canvas.getContext('2d');
-
-    var compuetedStyle = getComputedStyle(document.getElementById('paint'));
-    canvas.width = parseInt(compuetedStyle.getPropertyValue('width'));
-    canvas.height = parseInt(compuetedStyle.getPropertyValue('height'));
-
-    var mouse = {x: 0, y: 0};
-
-    canvas.addEventListener('mousemove', function(e) {
-      mouse.x = e.pageX - this.offsetLeft;
-      mouse.y = e.pageY - this.offsetTop;
-    }, false);
-
-    context.lineWidth = isMobile ? 60 : 25;
-    context.lineJoin = 'round';
-    context.lineCap = 'round';
-    context.strokeStyle = '#0000FF';
-
-    canvas.addEventListener('mousedown', function(e) {
-      context.moveTo(mouse.x, mouse.y);
-      context.beginPath();
-      canvas.addEventListener('mousemove', onPaint, false);
-    }, false);
-
-    canvas.addEventListener('mouseup', function() {
-      $('#number').html('<img id="spinner" src="spinner.gif"/>');
-      canvas.removeEventListener('mousemove', onPaint, false);
-      var img = new Image();
-      img.onload = function() {
-        context.drawImage(img, 0, 0, 28, 28);
-        data = context.getImageData(0, 0, 28, 28).data;
-        var input = [];
-        for(var i = 0; i < data.length; i += 4) {
-          input.push(data[i + 2] / 255);
+      // Build probability rows
+      function setupProbabilities() {
+        probsContainerEl.innerHTML = '';
+        for (let i = 0; i < 10; i++) {
+          const row = document.createElement('div');
+          row.className = 'prob-row';
+          row.id = `prob-row-${i}`;
+          row.innerHTML = `
+            <span class="prob-digit">${i}</span>
+            <div class="prob-track">
+              <div class="prob-fill" id="prob-fill-${i}"></div>
+            </div>
+            <span class="prob-val" id="prob-val-${i}">0%</span>
+          `;
+          probsContainerEl.appendChild(row);
         }
-        predict(input);
-      };
-      img.src = canvas.toDataURL('image/png');
-    }, false);
-
-    var onPaint = function() {
-      context.lineTo(mouse.x, mouse.y);
-      context.stroke();
-    };
-
-    tf.loadLayersModel('model/model.json').then(function(model) {
-      window.model = model;
-    });
-
-    // http://bencentra.com/code/2014/12/05/html5-canvas-touch-events.html
-    // Set up touch events for mobile, etc
-    canvas.addEventListener('touchstart', function (e) {
-      var touch = e.touches[0];
-      canvas.dispatchEvent(new MouseEvent('mousedown', {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      }));
-    }, false);
-    canvas.addEventListener('touchend', function (e) {
-      canvas.dispatchEvent(new MouseEvent('mouseup', {}));
-    }, false);
-    canvas.addEventListener('touchmove', function (e) {
-      var touch = e.touches[0];
-      canvas.dispatchEvent(new MouseEvent('mousemove', {
-        clientX: touch.clientX,
-        clientY: touch.clientY
-      }));
-    }, false);
-
-    var predict = function(input) {
-      if (window.model) {
-        window.model.predict([tf.tensor(input).reshape([1, 28, 28, 1])]).array().then(function(scores){
-          scores = scores[0];
-          predicted = scores.indexOf(Math.max(...scores));
-          $('#number').html(predicted);
-        });
-      } else {
-        // The model takes a bit to load, if we are too fast, wait
-        setTimeout(function(){predict(input)}, 50);
       }
-    }
+      setupProbabilities();
 
-    $('#clear').click(function(){
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      $('#number').html('');
-    });
+      // Build 30 feature map canvases
+      const featureCanvases = [];
+      function setupFeatureGrid() {
+        featureGalleryEl.innerHTML = '';
+        for (let i = 0; i < 30; i++) {
+          const fCan = document.createElement('canvas');
+          fCan.className = 'feature-canvas';
+          fCan.width = 24;
+          fCan.height = 24;
+          featureGalleryEl.appendChild(fCan);
+          featureCanvases.push(fCan);
+        }
+      }
+      setupFeatureGrid();
+
+      // Viewport resize
+      function handleResize() {
+        const rect = canvasViewport.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = Math.max(18, Math.floor(rect.width / 14));
+        ctx.strokeStyle = '#ffffff';
+      }
+      window.addEventListener('resize', handleResize);
+      handleResize();
+
+      // Load Model
+      async function loadClassifier() {
+        try {
+          model = await tf.loadLayersModel('model/model.json');
+          
+          // Tap intermediate conv2d layer for activation visualization
+          const convLayer = model.getLayer('conv2d');
+          if (convLayer) {
+            convModel = tf.model({
+              inputs: model.inputs,
+              outputs: convLayer.output
+            });
+          }
+
+          const backend = tf.getBackend().toUpperCase();
+          backendStatusEl.innerText = `${backend} Active`;
+        } catch (err) {
+          console.error('[EdgeMNIST] Model load failed:', err);
+          backendStatusEl.innerText = 'Load Error';
+          confidenceTextEl.innerText = 'Check model.json';
+        }
+      }
+      loadClassifier();
+
+      // Drawing Interactions
+      function startStroke(x, y) {
+        isDrawing = true;
+        lastX = x;
+        lastY = y;
+        canvasHint.classList.add('hidden');
+        appendStroke(x, y);
+      }
+
+      function appendStroke(x, y) {
+        if (!isDrawing) return;
+        ctx.beginPath();
+        ctx.moveTo(lastX, lastY);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        lastX = x;
+        lastY = y;
+      }
+
+      function finishStroke() {
+        if (!isDrawing) return;
+        isDrawing = false;
+        runInference();
+      }
+
+      function getPointerCoords(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches && e.touches.length > 0) {
+          return {
+            x: e.touches[0].clientX - rect.left,
+            y: e.touches[0].clientY - rect.top
+          };
+        }
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+
+      canvas.addEventListener('mousedown', (e) => {
+        const { x, y } = getPointerCoords(e);
+        startStroke(x, y);
+      });
+      canvas.addEventListener('mousemove', (e) => {
+        const { x, y } = getPointerCoords(e);
+        appendStroke(x, y);
+      });
+      window.addEventListener('mouseup', finishStroke);
+
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const { x, y } = getPointerCoords(e);
+        startStroke(x, y);
+      }, { passive: false });
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        const { x, y } = getPointerCoords(e);
+        appendStroke(x, y);
+      }, { passive: false });
+      canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        finishStroke();
+      }, { passive: false });
+
+      // Clear function
+      function resetBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        previewCtx.clearRect(0, 0, 28, 28);
+        canvasHint.classList.remove('hidden');
+        digitDisplayEl.innerText = '\u2013';
+        digitDisplayEl.style.transform = 'scale(1)';
+        confidenceTextEl.innerText = 'Awaiting stroke...';
+        latencyTraceEl.innerText = '0.0 ms';
+
+        for (let i = 0; i < 10; i++) {
+          const row = document.getElementById(`prob-row-${i}`);
+          const fill = document.getElementById(`prob-fill-${i}`);
+          const val = document.getElementById(`prob-val-${i}`);
+          row.classList.remove('active');
+          fill.style.width = '0%';
+          val.innerText = '0%';
+        }
+
+        featureCanvases.forEach(fc => {
+          const fctx = fc.getContext('2d');
+          fctx.clearRect(0, 0, 24, 24);
+        });
+      }
+      clearBtn.addEventListener('click', resetBoard);
+
+      // Preset digit drawing
+      document.querySelectorAll('.btn-preset').forEach(btn => {
+        btn.addEventListener('click', () => {
+          resetBoard();
+          canvasHint.classList.add('hidden');
+          const d = btn.getAttribute('data-digit');
+          drawPresetDigit(d);
+          runInference();
+        });
+      });
+
+      function drawPresetDigit(d) {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.floor(w * 0.72)}px "JetBrains Mono", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(d, w / 2, h / 2 + 5);
+        ctx.restore();
+      }
+
+      // Preprocessing Pipeline (MNIST Centering + Mass Weighing)
+      function extractMnistTensor() {
+        const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imgData.data;
+
+        let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+        let totalWeight = 0;
+
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            const idx = (y * canvas.width + x) * 4;
+            const alpha = data[idx + 3];
+            if (alpha > 20) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+              totalWeight += alpha;
+            }
+          }
+        }
+
+        if (totalWeight === 0) return null;
+
+        const boxWidth = maxX - minX + 1;
+        const boxHeight = maxY - minY + 1;
+        const maxDim = Math.max(boxWidth, boxHeight);
+
+        // Render into 28x28 with 20px normalized bounds
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = 28;
+        offCanvas.height = 28;
+        const offCtx = offCanvas.getContext('2d');
+        offCtx.fillStyle = '#000000';
+        offCtx.fillRect(0, 0, 28, 28);
+
+        const scale = 20 / maxDim;
+        const tw = boxWidth * scale;
+        const th = boxHeight * scale;
+        const tx = 14 - tw / 2;
+        const ty = 14 - th / 2;
+
+        offCtx.drawImage(canvas, minX, minY, boxWidth, boxHeight, tx, ty, tw, th);
+
+        // Preview rendering
+        previewCtx.drawImage(offCanvas, 0, 0);
+
+        // Normalize Float32 Tensor [0, 1]
+        const finalPix = offCtx.getImageData(0, 0, 28, 28).data;
+        const tensorBuffer = new Float32Array(28 * 28);
+        for (let i = 0; i < 28 * 28; i++) {
+          tensorBuffer[i] = finalPix[i * 4] / 255.0;
+        }
+
+        return tf.tensor4d(tensorBuffer, [1, 28, 28, 1]);
+      }
+
+      // Live Inference
+      async function runInference() {
+        if (!model) return;
+
+        const tensor = extractMnistTensor();
+        if (!tensor) return;
+
+        const t0 = performance.now();
+
+        const { predictions, activations } = tf.tidy(() => {
+          const preds = model.predict(tensor);
+          const acts = convModel ? convModel.predict(tensor) : null;
+          return {
+            predictions: preds.dataSync(),
+            activations: acts ? acts.dataSync() : null
+          };
+        });
+
+        const elapsed = (performance.now() - t0).toFixed(1);
+        latencyTraceEl.innerText = `${elapsed} ms`;
+
+        tensor.dispose();
+
+        // Calculate maximum probability
+        let bestScore = -1;
+        let bestDigit = 0;
+        for (let i = 0; i < 10; i++) {
+          if (predictions[i] > bestScore) {
+            bestScore = predictions[i];
+            bestDigit = i;
+          }
+        }
+
+        const pct = (bestScore * 100).toFixed(1);
+        digitDisplayEl.innerText = bestDigit;
+        digitDisplayEl.style.transform = 'scale(1.08)';
+        setTimeout(() => { digitDisplayEl.style.transform = 'scale(1)'; }, 150);
+
+        confidenceTextEl.innerText = `${pct}% confidence`;
+
+        // Update probability bars
+        for (let i = 0; i < 10; i++) {
+          const row = document.getElementById(`prob-row-${i}`);
+          const fill = document.getElementById(`prob-fill-${i}`);
+          const val = document.getElementById(`prob-val-${i}`);
+          const barPct = (predictions[i] * 100).toFixed(1);
+
+          fill.style.width = `${barPct}%`;
+          val.innerText = `${barPct}%`;
+
+          if (i === bestDigit) {
+            row.classList.add('active');
+          } else {
+            row.classList.remove('active');
+          }
+        }
+
+        // Render activations
+        if (activations && activations.length >= 24 * 24 * 30) {
+          renderActivations(activations);
+        }
+      }
+
+      function renderActivations(acts) {
+        for (let f = 0; f < 30; f++) {
+          const fCan = featureCanvases[f];
+          const fctx = fCan.getContext('2d');
+          const idata = fctx.createImageData(24, 24);
+
+          for (let y = 0; y < 24; y++) {
+            for (let x = 0; x < 24; x++) {
+              const actIdx = y * 24 * 30 + x * 30 + f;
+              const intensity = Math.min(255, Math.max(0, Math.floor(acts[actIdx] * 255)));
+              const pIdx = (y * 24 + x) * 4;
+
+              // Electric cyan / white filter colorization
+              idata.data[pIdx] = Math.floor(intensity * 0.7);
+              idata.data[pIdx + 1] = Math.floor(intensity * 0.95);
+              idata.data[pIdx + 2] = intensity;
+              idata.data[pIdx + 3] = 255;
+            }
+          }
+          fctx.putImageData(idata, 0, 0);
+        }
+      }
     </script>
   </body>
 </html>
