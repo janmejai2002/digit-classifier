@@ -907,6 +907,8 @@
       let isDrawing = false;
       let lastX = 0;
       let lastY = 0;
+      let isInferring = false;
+      let pendingInference = false;
 
       // Elements
       const canvas = document.getElementById('drawingCanvas');
@@ -1011,11 +1013,20 @@
         ctx.stroke();
         lastX = x;
         lastY = y;
+        scheduleInference();
       }
 
       function finishStroke() {
         if (!isDrawing) return;
         isDrawing = false;
+        scheduleInference();
+      }
+
+      function scheduleInference() {
+        if (isInferring) {
+          pendingInference = true;
+          return;
+        }
         runInference();
       }
 
@@ -1201,66 +1212,77 @@
         return tf.tensor4d(tensorBuffer, [1, 28, 28, 1]);
       }
 
-      // Live Inference
+      // Live Continuous Inference
       async function runInference() {
         if (!model) return;
 
-        const tensor = extractMnistTensor();
-        if (!tensor) return;
+        isInferring = true;
 
-        const t0 = performance.now();
-
-        const { predictions, activations } = tf.tidy(() => {
-          const preds = model.predict(tensor);
-          const acts = convModel ? convModel.predict(tensor) : null;
-          return {
-            predictions: preds.dataSync(),
-            activations: acts ? acts.dataSync() : null
-          };
-        });
-
-        const elapsed = (performance.now() - t0).toFixed(1);
-        latencyTraceEl.innerText = `${elapsed} ms`;
-
-        tensor.dispose();
-
-        // Calculate maximum probability
-        let bestScore = -1;
-        let bestDigit = 0;
-        for (let i = 0; i < 10; i++) {
-          if (predictions[i] > bestScore) {
-            bestScore = predictions[i];
-            bestDigit = i;
+        try {
+          const tensor = extractMnistTensor();
+          if (!tensor) {
+            isInferring = false;
+            return;
           }
-        }
 
-        const pct = (bestScore * 100).toFixed(1);
-        digitDisplayEl.innerText = bestDigit;
-        digitDisplayEl.style.transform = 'scale(1.08)';
-        setTimeout(() => { digitDisplayEl.style.transform = 'scale(1)'; }, 150);
+          const t0 = performance.now();
 
-        confidenceTextEl.innerText = `${pct}% confidence`;
+          const { predictions, activations } = tf.tidy(() => {
+            const preds = model.predict(tensor);
+            const acts = convModel ? convModel.predict(tensor) : null;
+            return {
+              predictions: preds.dataSync(),
+              activations: acts ? acts.dataSync() : null
+            };
+          });
 
-        // Update probability bars
-        for (let i = 0; i < 10; i++) {
-          const row = document.getElementById(`prob-row-${i}`);
-          const fill = document.getElementById(`prob-fill-${i}`);
-          const val = document.getElementById(`prob-val-${i}`);
-          const barPct = (predictions[i] * 100).toFixed(1);
+          const elapsed = (performance.now() - t0).toFixed(1);
+          latencyTraceEl.innerText = `${elapsed} ms`;
 
-          fill.style.width = `${barPct}%`;
-          val.innerText = `${barPct}%`;
+          tensor.dispose();
 
-          if (i === bestDigit) {
-            row.classList.add('active');
-          } else {
-            row.classList.remove('active');
+          // Calculate maximum probability
+          let bestScore = -1;
+          let bestDigit = 0;
+          for (let i = 0; i < 10; i++) {
+            if (predictions[i] > bestScore) {
+              bestScore = predictions[i];
+              bestDigit = i;
+            }
           }
-        }
 
-        // Render activations
-        if (activations && activations.length >= 24 * 24 * 30) {
-          renderActivations(activations);
+          const pct = (bestScore * 100).toFixed(1);
+          digitDisplayEl.innerText = bestDigit;
+
+          confidenceTextEl.innerText = `${pct}% confidence`;
+
+          // Update probability bars smoothly
+          for (let i = 0; i < 10; i++) {
+            const row = document.getElementById(`prob-row-${i}`);
+            const fill = document.getElementById(`prob-fill-${i}`);
+            const val = document.getElementById(`prob-val-${i}`);
+            const barPct = (predictions[i] * 100).toFixed(1);
+
+            fill.style.width = `${barPct}%`;
+            val.innerText = `${barPct}%`;
+
+            if (i === bestDigit) {
+              row.classList.add('active');
+            } else {
+              row.classList.remove('active');
+            }
+          }
+
+          // Render activations
+          if (activations && activations.length >= 24 * 24 * 30) {
+            renderActivations(activations);
+          }
+        } finally {
+          isInferring = false;
+          if (pendingInference) {
+            pendingInference = false;
+            requestAnimationFrame(runInference);
+          }
         }
       }
 
