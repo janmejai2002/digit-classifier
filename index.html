@@ -1135,7 +1135,47 @@
         const boxHeight = maxY - minY + 1;
         const maxDim = Math.max(boxWidth, boxHeight);
 
-        // Render into 28x28 with 20px normalized bounds
+        // Render into temporary 20x20 offscreen canvas
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = 20;
+        tempCanvas.height = 20;
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCtx.fillStyle = '#000000';
+        tempCtx.fillRect(0, 0, 20, 20);
+
+        const scale = 20 / maxDim;
+        const tw = boxWidth * scale;
+        const th = boxHeight * scale;
+        const tx = 10 - tw / 2;
+        const ty = 10 - th / 2;
+
+        tempCtx.drawImage(canvas, minX, minY, boxWidth, boxHeight, tx, ty, tw, th);
+
+        // Compute Center of Mass inside the 20x20 image to center on (14, 14)
+        const tempPixels = tempCtx.getImageData(0, 0, 20, 20).data;
+        let cMassX = 0, cMassY = 0, sumMass = 0;
+        for (let y = 0; y < 20; y++) {
+          for (let x = 0; x < 20; x++) {
+            const val = tempPixels[(y * 20 + x) * 4 + 3]; // alpha or intensity
+            if (val > 10) {
+              cMassX += x * val;
+              cMassY += y * val;
+              sumMass += val;
+            }
+          }
+        }
+
+        let shiftX = 4;
+        let shiftY = 4;
+        if (sumMass > 0) {
+          const meanX = cMassX / sumMass;
+          const meanY = cMassY / sumMass;
+          // Target center of mass is (13.5, 13.5) in 28x28
+          shiftX = Math.round(13.5 - meanX);
+          shiftY = Math.round(13.5 - meanY);
+        }
+
+        // Final 28x28 MNIST canvas
         const offCanvas = document.createElement('canvas');
         offCanvas.width = 28;
         offCanvas.height = 28;
@@ -1143,13 +1183,7 @@
         offCtx.fillStyle = '#000000';
         offCtx.fillRect(0, 0, 28, 28);
 
-        const scale = 20 / maxDim;
-        const tw = boxWidth * scale;
-        const th = boxHeight * scale;
-        const tx = 14 - tw / 2;
-        const ty = 14 - th / 2;
-
-        offCtx.drawImage(canvas, minX, minY, boxWidth, boxHeight, tx, ty, tw, th);
+        offCtx.drawImage(tempCanvas, shiftX, shiftY);
 
         // Preview rendering
         previewCtx.drawImage(offCanvas, 0, 0);
@@ -1158,7 +1192,10 @@
         const finalPix = offCtx.getImageData(0, 0, 28, 28).data;
         const tensorBuffer = new Float32Array(28 * 28);
         for (let i = 0; i < 28 * 28; i++) {
-          tensorBuffer[i] = finalPix[i * 4] / 255.0;
+          // Average R/G/B/A intensity
+          const r = finalPix[i * 4];
+          const a = finalPix[i * 4 + 3];
+          tensorBuffer[i] = (r / 255.0) * (a / 255.0);
         }
 
         return tf.tensor4d(tensorBuffer, [1, 28, 28, 1]);
